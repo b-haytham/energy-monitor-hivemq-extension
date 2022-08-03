@@ -5,7 +5,9 @@ package com.energymonitor.extension;
 
 import com.hivemq.extension.sdk.api.ExtensionMain;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.extension.sdk.api.events.EventRegistry;
 import com.hivemq.extension.sdk.api.parameter.*;
+import com.hivemq.extension.sdk.api.services.Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,20 @@ public class App implements ExtensionMain {
     public void extensionStart(@NotNull ExtensionStartInput extensionStartInput, @NotNull ExtensionStartOutput extensionStartOutput) {
         final ExtensionInformation extensionInformation = extensionStartInput.getExtensionInformation();
         log.info("Started " + extensionInformation.getName() + ":" + extensionInformation.getVersion());
+
+        try {
+            // setup authentication
+            Services.securityRegistry().setAuthenticatorProvider(new EnergyMonitorAuthenticatorProvider());
+
+            // add lifecycle event listeners
+            final EventRegistry eventRegistry = Services.eventRegistry();
+            final EnergyMonitorListeners energyMonitorListeners = new EnergyMonitorListeners();
+
+            eventRegistry.setClientLifecycleEventListener(input -> energyMonitorListeners);
+
+        } catch (Exception e) {
+            log.error("Exception thrown at extension start: ", e);
+        }
     }
 
     @Override
